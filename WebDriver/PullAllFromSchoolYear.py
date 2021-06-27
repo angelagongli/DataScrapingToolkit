@@ -2,6 +2,9 @@ from selenium import webdriver
 
 driver = webdriver.Chrome(executable_path='C:\Program Files (x86)\ChromeDriver\chromedriver.exe')
 
+# Advice from Menaka: WebDriver must sleep generated interval before every scrape
+from random import randint
+from time import sleep
 import pandas as pd
 import os
 
@@ -20,5 +23,6 @@ for student in df.itertuples(name='Student'):
         driver.get(f"https://voterrecords.com/voters/{student.firstname}-{student.lastname}")
         with open(f"./HTML/{student.school}/{student.cohort_yr}/{student.firstname}_{student.lastname}.html", "w") as f:
             f.write(driver.page_source)
+    sleep(randint(20,25))
 
 # df.to_excel('C:\\Users\\angel\\Documents\\Automation\\Web_Scraping\\Commencement Program Lists\\Amherst_College_2004_clean.xlsx', sheet_name='Relatives')
