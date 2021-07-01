@@ -96,13 +96,13 @@ for file in os.listdir(root):
             cityState = ""
             queryString = ""
             if hasattr(student, "city") and student.country.upper() == "UNITED STATES":
-                cityState = student.city.replace(" ","+") + "-" + US_StateAbbreviationLookUp[student.state.upper()]
-                if student.middlename.strip():
-                    queryString = f"{cityState}/{student.firstname}+{student.middlename}+{student.lastname}"
-                else:
-                    queryString = f"{cityState}/{student.firstname}+{student.lastname}"
+                nameString = f"{student.firstname}+{student.middlename}+{student.lastname}"
+                if not student.middlename.strip():
+                    nameString = f"{student.firstname}+{student.lastname}"
                 if "-" in student.name:
-                    queryString = queryString.replace("-", "+")
+                    nameString = nameString.replace("-", "+")
+                cityState = student.city.replace(" ","+") + "-" + US_StateAbbreviationLookUp[student.state.upper()]
+                queryString = f"{cityState}/{nameString}"
             elif student.middlename.strip():
                 queryString = f"{student.firstname}-{student.middlename}-{student.lastname}"
             else:
@@ -162,7 +162,7 @@ for file in os.listdir(root):
                     studentResult = StudentResult(student.student_no,
                         student.firstname, student.middlename, student.lastname,
                         school, year, resultName, resultAge,
-                        resultCity, resultCity, 'StudentVoterRecords', resultVoterRecordURL)
+                        resultCity, resultCity, 'StudentVoterRecord', resultVoterRecordURL)
                     StudentResults.append(studentResult)
             sleep(randint(20,25))
         StudentResult_DF = pd.DataFrame(data=StudentResults)
