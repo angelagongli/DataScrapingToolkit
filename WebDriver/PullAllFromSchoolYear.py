@@ -80,9 +80,11 @@ for file in os.listdir(root):
     fullFilePath = os.path.join(root, file)
     if os.path.isfile(fullFilePath):
         df = pd.read_excel(fullFilePath)
+        # Menaka wants Name Entered and Name Returned for every student
         StudentResult = collections.namedtuple('StudentResult',
             ['student_no', 'firstname', 'middlename', 'lastname',
-            'school', 'cohort', 'resultType', 'resultData'])
+            'school', 'cohort', 'resultName', 'resultAge',
+            'resultCity', 'resultCityHistory', 'resultType', 'resultData'])
         StudentResults = []
         for student in df.itertuples(name='Student'):
             school = student.school
@@ -110,19 +112,38 @@ for file in os.listdir(root):
             headerRegexMatch = headerRegex.match(header)
             voterRecordNumber = headerRegexMatch.group(2)
             if voterRecordNumber == "0":
-                print("Pull Student's Relative Data from TruthFinder:")
+                print("Pulling Student's Relative Data from TruthFinder...")
                 for link in soup.find_all('a', string="That's The One!"):
                     relativeString = ""
-                    for relative in link.parent.find_previous_sibling().contents:
+                    cityString = ""
+                    cursor = link.parent.find_previous_sibling()
+                    for relative in cursor.contents:
                         if isinstance(relative, NavigableString) and relative.strip():
-                            relativeString += relative.strip() + ","
+                            relativeString += relative.strip() + "*"
+                    cursor = cursor.find_previous_sibling()
+                    for city in cursor.contents:
+                        if isinstance(city, NavigableString) and city.strip():
+                            cityString += city.strip() + "*"
+                    cursor = cursor.find_previous_sibling()
+                    resultName = cursor.h4.get_text()
+                    resultAge = ""
+                    if "(" in resultName:
+                        resultNameAge = resultName.split(" (")
+                        resultName = resultNameAge[0]
+                        resultAge = resultNameAge[1].replace(")","")
+                    resultCity = cursor.p.string
                     studentResult = StudentResult(student.student_no,
                         student.firstname, student.middlename, student.lastname,
-                        school, year, 'Relatives', relativeString)
+                        school, year, resultName, resultAge,
+                        resultCity, cityString, 'Relatives', relativeString)
                     StudentResults.append(studentResult)
             else:
                 print("Pull All from First Page:")
             sleep(randint(20,25))
+        StudentResult_DF = pd.DataFrame(data=StudentResults)
+        if not os.path.isdir(os.path.join(root, 'StudentResults')):
+            os.mkdir(os.path.join(root, 'StudentResults'))
+        StudentResult_DF.to_excel(os.path.join(root, 'StudentResults', file), sheet_name='StudentResults')
 
 # Menaka's Dataset Design: Unique ID of Student Record in Whole Dataset
 # Is the Composite Key of (student_no, school, cohort/cohort_yr)
