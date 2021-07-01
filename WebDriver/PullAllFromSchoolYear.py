@@ -101,6 +101,8 @@ for file in os.listdir(root):
                     queryString = f"{cityState}/{student.firstname}+{student.middlename}+{student.lastname}"
                 else:
                     queryString = f"{cityState}/{student.firstname}+{student.lastname}"
+                if "-" in student.name:
+                    queryString = queryString.replace("-", "+")
             elif student.middlename.strip():
                 queryString = f"{student.firstname}-{student.middlename}-{student.lastname}"
             else:
@@ -138,7 +140,30 @@ for file in os.listdir(root):
                         resultCity, cityString, 'Relatives', relativeString)
                     StudentResults.append(studentResult)
             else:
-                print("Pull All from First Page:")
+                print("Pulling All from First Page...")
+                for person in soup.find_all('tr'):
+                    if person.find_next().name == "th":
+                        print("Header")
+                        continue
+                    # In the early stage of entering the Student/pulling the StudentResult,
+                    # Only scrape the data required to identify the student we want
+                    cursor = person.find_next()
+                    resultName = cursor.span.span.a.get_text().strip()
+                    resultVoterRecordURL = cursor.span.span.a['href']
+                    resultAge = ""
+                    resultAgeExistingTag = cursor.span.find('strong', text=re.compile(".*Age.*"))
+                    if resultAgeExistingTag is not None:
+                        resultAge = resultAgeExistingTag.next_element.next_element
+                    cursor = cursor.find_next_sibling()
+                    resultCity = ""
+                    resultCityExistingTag = cursor.find('strong', text=re.compile(".*Residential Address.*"))
+                    if resultCityExistingTag is not None:
+                        resultCity = resultCityExistingTag.find_next('span').string
+                    studentResult = StudentResult(student.student_no,
+                        student.firstname, student.middlename, student.lastname,
+                        school, year, resultName, resultAge,
+                        resultCity, resultCity, 'StudentVoterRecords', resultVoterRecordURL)
+                    StudentResults.append(studentResult)
             sleep(randint(20,25))
         StudentResult_DF = pd.DataFrame(data=StudentResults)
         if not os.path.isdir(os.path.join(root, 'StudentResults')):
@@ -147,6 +172,6 @@ for file in os.listdir(root):
 
 # Menaka's Dataset Design: Unique ID of Student Record in Whole Dataset
 # Is the Composite Key of (student_no, school, cohort/cohort_yr)
-# TODO: Handle Hyphenated Name When Querystring Delimiter Is "+"
 # TODO: Handle voterrecords.com's Listing of the Middle Initial/Middle Name
+# TODO: Handle Pagination: How much does Menaka want to scrape for every student?
 # df.to_excel('C:\\Users\\angel\\Documents\\Automation\\Web_Scraping\\Commencement Program Lists\\Amherst_College_2004_clean.xlsx', sheet_name='Relatives')
