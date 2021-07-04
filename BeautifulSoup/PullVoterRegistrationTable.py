@@ -1,15 +1,21 @@
 from bs4 import BeautifulSoup
 import collections
-
-with open("C:\\Users\\angel\\GitHub\\DataScrapingToolkit\\HTML\\StudentID_VoterRecord.html") as fp:
-    soup = BeautifulSoup(fp, 'html.parser')
+from selenium import webdriver
+ChromeOptions = webdriver.ChromeOptions()
+ChromeOptions.add_experimental_option("excludeSwitches", ["enable-automation"])
+ChromeOptions.add_experimental_option('useAutomationExtension', False)
+ChromeOptions.add_argument("--disable-blink-features=AutomationControlled")
+driver = webdriver.Chrome(executable_path='C:\Program Files (x86)\ChromeDriver\chromedriver.exe', options=ChromeOptions)
+from random import randint
+from time import sleep
+import pandas as pd
+import os
 
 # Menaka wants everything in the Overview table: City, Age, Gender and Race
 # But there is no need to duplicate everything present in the saved StudentResult
 # => Only useful for the StudentRelative: Make sure to keep Student/StudentRelative
 # Clearly identified in the dataset all the way through
 
-dataPointDictionary = {}
 StudentVoterRecord = collections.namedtuple('StudentVoterRecord',
     # All Kept from StudentResult:
     ['student_no', 'firstname', 'middlename', 'lastname',
@@ -32,56 +38,81 @@ StudentRelativeVoterRecord = collections.namedtuple('StudentRelativeVoterRecord'
     'StatusReason','Precinct','PrecinctSplit','Ward','CongressionalDistrict',
     'HouseDistrict','SenateDistrict','CountyDistrict','SchoolBoardDistrict'])
 
-for tableColumn in soup.find(id="overview").find_all('div') + \
-    soup.find(id="voter-registration").find_all('div'):
-    for label in tableColumn.find_all('strong'):
-        labelString = label.string.replace(":","").replace(" ","").strip()
-        dataTag = label.find_next_sibling()
-        dataPoint = ""
-        if dataTag.name == "br":
-            dataPoint = label.next_element.next_element
-        else:
-            dataPoint = dataTag.string
-        dataPointDictionary[labelString] = dataPoint
+root = 'C:\\Users\\angel\\Documents\\Automation\\Web_Scraping\\Commencement Program Lists'
 
-StudentVoterRecord = StudentVoterRecord(
-    student_no='student_no',
-    firstname='firstname',
-    middlename='middlename',
-    lastname='lastname',
-    school='school',
-    cohort='cohort',
-    resultName='resultName',
-    resultAge='resultAge',
-    resultCity='resultCity',
-    # From Voter Registration Table:
-    PartyAffiliation=dataPointDictionary['PartyAffiliation']
-        if 'PartyAffiliation' in dataPointDictionary else None,
-    RegisteredtoVoteIn=dataPointDictionary['RegisteredtoVoteIn']
-        if 'RegisteredtoVoteIn' in dataPointDictionary else None,
-    RegistrationDate=dataPointDictionary['RegistrationDate']
-        if 'RegistrationDate' in dataPointDictionary else None,
-    VoterStatus=dataPointDictionary['VoterStatus']
-        if 'VoterStatus' in dataPointDictionary else None,
-    StatusReason=dataPointDictionary['StatusReason']
-        if 'StatusReason' in dataPointDictionary else None,
-    Precinct=dataPointDictionary['Precinct']
-        if 'Precinct' in dataPointDictionary else None,
-    PrecinctSplit=dataPointDictionary['PrecinctSplit']
-        if 'PrecinctSplit' in dataPointDictionary else None,
-    Ward=dataPointDictionary['Ward']
-        if 'Ward' in dataPointDictionary else None,
-    CongressionalDistrict=dataPointDictionary['CongressionalDistrict']
-        if 'CongressionalDistrict' in dataPointDictionary else None,
-    HouseDistrict=dataPointDictionary['HouseDistrict']
-        if 'HouseDistrict' in dataPointDictionary else None,
-    SenateDistrict=dataPointDictionary['SenateDistrict']
-        if 'SenateDistrict' in dataPointDictionary else None,
-    CountyDistrict=dataPointDictionary['CountyDistrict']
-        if 'CountyDistrict' in dataPointDictionary else None,
-    SchoolBoardDistrict=dataPointDictionary['SchoolBoardDistrict']
-        if 'SchoolBoardDistrict' in dataPointDictionary else None
-    # ... For All Key Fields in the Student's/Student's Relative's Voter Registration
-    # Saved from Voter Record Page into DataPointDictionary
-)
-print(StudentVoterRecord)
+for file in os.listdir(root):
+    fullFilePath = os.path.join(root, file)
+    fullStudentResultFilePath = os.path.join(root, 'StudentResults', file)
+    StudentVoterRecords = []
+    StudentRelativeVoterRecords = []
+    if os.path.isfile(fullFilePath) and os.path.isfile(fullStudentResultFilePath):
+        StudentResult_DF = pd.read_excel(fullStudentResultFilePath, sheet_name='IdentifiedStudentResults')
+        StudentVoterRecordResult_DF = StudentResult_DF[StudentResult_DF['resultType'] == 'StudentVoterRecord']
+        for StudentResult in StudentVoterRecordResult_DF.itertuples(name='StudentResult'):
+            driver.get(f"https://voterrecords.com{StudentResult.resultData}")
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            dataPointDictionary = {}
+            for tableColumn in soup.find(id="overview").find_all('div') + \
+                soup.find(id="voter-registration").find_all('div'):
+                for label in tableColumn.find_all('strong'):
+                    labelString = label.string.replace(":","").replace(" ","").strip()
+                    dataTag = label.find_next_sibling()
+                    dataPoint = ""
+                    if dataTag.name == "br":
+                        dataPoint = label.next_element.next_element
+                    else:
+                        dataPoint = dataTag.string
+                    dataPointDictionary[labelString] = dataPoint
+            StudentVoterRecord = StudentVoterRecord(
+                student_no='student_no',
+                firstname='firstname',
+                middlename='middlename',
+                lastname='lastname',
+                school='school',
+                cohort='cohort',
+                resultName='resultName',
+                resultAge='resultAge',
+                resultCity='resultCity',
+                # From Voter Registration Table:
+                PartyAffiliation=dataPointDictionary['PartyAffiliation']
+                    if 'PartyAffiliation' in dataPointDictionary else None,
+                RegisteredtoVoteIn=dataPointDictionary['RegisteredtoVoteIn']
+                    if 'RegisteredtoVoteIn' in dataPointDictionary else None,
+                RegistrationDate=dataPointDictionary['RegistrationDate']
+                    if 'RegistrationDate' in dataPointDictionary else None,
+                VoterStatus=dataPointDictionary['VoterStatus']
+                    if 'VoterStatus' in dataPointDictionary else None,
+                StatusReason=dataPointDictionary['StatusReason']
+                    if 'StatusReason' in dataPointDictionary else None,
+                Precinct=dataPointDictionary['Precinct']
+                    if 'Precinct' in dataPointDictionary else None,
+                PrecinctSplit=dataPointDictionary['PrecinctSplit']
+                    if 'PrecinctSplit' in dataPointDictionary else None,
+                Ward=dataPointDictionary['Ward']
+                    if 'Ward' in dataPointDictionary else None,
+                CongressionalDistrict=dataPointDictionary['CongressionalDistrict']
+                    if 'CongressionalDistrict' in dataPointDictionary else None,
+                HouseDistrict=dataPointDictionary['HouseDistrict']
+                    if 'HouseDistrict' in dataPointDictionary else None,
+                SenateDistrict=dataPointDictionary['SenateDistrict']
+                    if 'SenateDistrict' in dataPointDictionary else None,
+                CountyDistrict=dataPointDictionary['CountyDistrict']
+                    if 'CountyDistrict' in dataPointDictionary else None,
+                SchoolBoardDistrict=dataPointDictionary['SchoolBoardDistrict']
+                    if 'SchoolBoardDistrict' in dataPointDictionary else None
+                # ... For All Key Fields in the Student's/Student's Relative's Voter Registration
+                # Saved from Voter Record Page into DataPointDictionary
+            )
+            print(StudentVoterRecord)
+            StudentVoterRecords.append(StudentVoterRecord)
+            sleep(randint(20,25))
+        StudentVoterRecord_DF = pd.DataFrame(data=StudentVoterRecords)
+        # StudentRelativeVoterRecord_DF = pd.DataFrame(data=StudentVoterRecords)
+        if not os.path.isdir(os.path.join(root, 'VoterRegistrationData')):
+            os.mkdir(os.path.join(root, 'VoterRegistrationData'))
+        with pd.ExcelWriter(os.path.join(root, 'VoterRegistrationData', file),
+                            mode='a') as writer:
+            StudentVoterRecord_DF.to_excel(writer, sheet_name='StudentVoterRegistrationData')
+        # with pd.ExcelWriter(os.path.join(root, 'VoterRegistrationData', file),
+        #                     mode='a') as writer:
+        #     StudentRelativeVoterRecord_DF.to_excel(writer, sheet_name='StudentRelativeVoterRegistrationData')
