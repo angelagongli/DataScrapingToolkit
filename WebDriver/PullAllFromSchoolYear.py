@@ -80,10 +80,12 @@ for file in os.listdir(root):
     fullFilePath = os.path.join(root, file)
     if os.path.isfile(fullFilePath):
         df = pd.read_excel(fullFilePath)
-        # Menaka wants Name Entered and Name Returned for every student
+        # Menaka wants Name Entered and Name Returned for every student, as well as
+        # All the rest of the student's information entered into the URL returning the
+        # StudentResult kept together with the result data itself in the StudentResult record
         StudentResult = collections.namedtuple('StudentResult',
             ['student_no', 'firstname', 'middlename', 'lastname',
-            'school', 'cohort', 'resultName', 'resultAge',
+            'school', 'cohort', 'city', 'state', 'resultName', 'resultAge',
             'resultCity', 'resultCityHistory', 'resultType', 'resultData'])
         StudentResults = []
         for student in df.itertuples(name='Student'):
@@ -134,10 +136,16 @@ for file in os.listdir(root):
                         resultName = resultNameAge[0]
                         resultAge = resultNameAge[1].replace(")","")
                     resultCity = cursor.p.string
-                    studentResult = StudentResult(student.student_no,
-                        student.firstname, student.middlename, student.lastname,
-                        school, year, resultName, resultAge,
-                        resultCity, cityString, 'Relatives', relativeString)
+                    if hasattr(student, "city"):
+                        studentResult = StudentResult(student.student_no,
+                            student.firstname, student.middlename, student.lastname,
+                            school, year, student.city, student.state, resultName, resultAge,
+                            resultCity, cityString, 'Relatives', relativeString)
+                    else:
+                        studentResult = StudentResult(student.student_no,
+                            student.firstname, student.middlename, student.lastname,
+                            school, year, None, None, resultName, resultAge,
+                            resultCity, cityString, 'Relatives', relativeString)
                     StudentResults.append(studentResult)
             else:
                 print("Pulling All from First Page...")
@@ -159,10 +167,16 @@ for file in os.listdir(root):
                     resultCityExistingTag = cursor.find('strong', text=re.compile(".*Residential Address.*"))
                     if resultCityExistingTag is not None:
                         resultCity = resultCityExistingTag.find_next('span').string
-                    studentResult = StudentResult(student.student_no,
-                        student.firstname, student.middlename, student.lastname,
-                        school, year, resultName, resultAge,
-                        resultCity, resultCity, 'StudentVoterRecord', resultVoterRecordURL)
+                    if hasattr(student, "city"):
+                        studentResult = StudentResult(student.student_no,
+                            student.firstname, student.middlename, student.lastname,
+                            school, year, student.city, student.state, resultName, resultAge,
+                            resultCity, resultCity, 'StudentVoterRecord', resultVoterRecordURL)
+                    else:
+                        studentResult = StudentResult(student.student_no,
+                            student.firstname, student.middlename, student.lastname,
+                            school, year, None, None, resultName, resultAge,
+                            resultCity, resultCity, 'StudentVoterRecord', resultVoterRecordURL)
                     StudentResults.append(studentResult)
             sleep(randint(20,25))
         StudentResult_DF = pd.DataFrame(data=StudentResults)
