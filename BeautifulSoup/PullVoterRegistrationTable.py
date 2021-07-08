@@ -58,21 +58,22 @@ for file in os.listdir(root):
                     labelString = label.string.replace(":","").replace(" ","").strip()
                     dataTag = label.find_next_sibling()
                     dataPoint = ""
-                    if dataTag.name == "br":
-                        dataPoint = label.next_element.next_element
-                    else:
-                        dataPoint = dataTag.string
+                    if dataTag:
+                        if dataTag.name == "br":
+                            dataPoint = label.next_element.next_element
+                        else:
+                            dataPoint = dataTag.string
                     dataPointDictionary[labelString] = dataPoint
-            StudentVoterRecord = StudentVoterRecord(
-                student_no='student_no',
-                firstname='firstname',
-                middlename='middlename',
-                lastname='lastname',
-                school='school',
-                cohort='cohort',
-                resultName='resultName',
-                resultAge='resultAge',
-                resultCity='resultCity',
+            studentVoterRecord = StudentVoterRecord(
+                student_no=StudentResult.student_no,
+                firstname=StudentResult.firstname,
+                middlename=StudentResult.middlename,
+                lastname=StudentResult.lastname,
+                school=StudentResult.school,
+                cohort=StudentResult.cohort,
+                resultName=StudentResult.resultName,
+                resultAge=StudentResult.resultAge,
+                resultCity=StudentResult.resultCity,
                 # From Voter Registration Table:
                 PartyAffiliation=dataPointDictionary['PartyAffiliation']
                     if 'PartyAffiliation' in dataPointDictionary else None,
@@ -103,16 +104,81 @@ for file in os.listdir(root):
                 # ... For All Key Fields in the Student's/Student's Relative's Voter Registration
                 # Saved from Voter Record Page into DataPointDictionary
             )
-            print(StudentVoterRecord)
-            StudentVoterRecords.append(StudentVoterRecord)
+            print(studentVoterRecord)
+            StudentVoterRecords.append(studentVoterRecord)
             sleep(randint(20,25))
         StudentVoterRecord_DF = pd.DataFrame(data=StudentVoterRecords)
-        # StudentRelativeVoterRecord_DF = pd.DataFrame(data=StudentVoterRecords)
         if not os.path.isdir(os.path.join(root, 'VoterRegistrationData')):
             os.mkdir(os.path.join(root, 'VoterRegistrationData'))
+        StudentVoterRecord_DF.to_excel(os.path.join(root, 'VoterRegistrationData', file), sheet_name='StudentVoterRegistrationData')
+        StudentRelativeResult_DF = pd.read_excel(fullStudentResultFilePath, sheet_name='IdentifiedStudentRelativeResults')
+        for StudentRelativeResult in StudentRelativeResult_DF.itertuples(name='StudentRelativeResult'):
+            driver.get(f"https://voterrecords.com{StudentRelativeResult.resultVoterRecordURL}")
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            dataPointDictionary = {}
+            for tableColumn in soup.find(id="overview").find_all('div') + \
+                soup.find(id="voter-registration").find_all('div'):
+                for label in tableColumn.find_all('strong'):
+                    labelString = label.string.replace(":","").replace(" ","").strip()
+                    dataTag = label.find_next_sibling()
+                    dataPoint = ""
+                    if dataTag:
+                        if dataTag.name == "br":
+                            dataPoint = label.next_element.next_element
+                        else:
+                            dataPoint = dataTag.string
+                    dataPointDictionary[labelString] = dataPoint
+            studentRelativeVoterRecord = StudentRelativeVoterRecord(
+                student_no=StudentRelativeResult.student_no,
+                firstname=StudentRelativeResult.firstname,
+                middlename=StudentRelativeResult.middlename,
+                lastname=StudentRelativeResult.lastname,
+                school=StudentRelativeResult.school,
+                cohort=StudentRelativeResult.cohort,
+                studentRelativeName=StudentRelativeResult.resultName,
+                # From Overview Table:
+                Livesin=dataPointDictionary['Livesin']
+                    if 'Livesin' in dataPointDictionary else None,
+                Age=dataPointDictionary['Age']
+                    if 'Age' in dataPointDictionary else None,
+                Gender=dataPointDictionary['Gender']
+                    if 'Gender' in dataPointDictionary else None,
+                Race=dataPointDictionary['Race']
+                    if 'Race' in dataPointDictionary else None,
+                # From Voter Registration Table:
+                PartyAffiliation=dataPointDictionary['PartyAffiliation']
+                    if 'PartyAffiliation' in dataPointDictionary else None,
+                RegisteredtoVoteIn=dataPointDictionary['RegisteredtoVoteIn']
+                    if 'RegisteredtoVoteIn' in dataPointDictionary else None,
+                RegistrationDate=dataPointDictionary['RegistrationDate']
+                    if 'RegistrationDate' in dataPointDictionary else None,
+                VoterStatus=dataPointDictionary['VoterStatus']
+                    if 'VoterStatus' in dataPointDictionary else None,
+                StatusReason=dataPointDictionary['StatusReason']
+                    if 'StatusReason' in dataPointDictionary else None,
+                Precinct=dataPointDictionary['Precinct']
+                    if 'Precinct' in dataPointDictionary else None,
+                PrecinctSplit=dataPointDictionary['PrecinctSplit']
+                    if 'PrecinctSplit' in dataPointDictionary else None,
+                Ward=dataPointDictionary['Ward']
+                    if 'Ward' in dataPointDictionary else None,
+                CongressionalDistrict=dataPointDictionary['CongressionalDistrict']
+                    if 'CongressionalDistrict' in dataPointDictionary else None,
+                HouseDistrict=dataPointDictionary['HouseDistrict']
+                    if 'HouseDistrict' in dataPointDictionary else None,
+                SenateDistrict=dataPointDictionary['SenateDistrict']
+                    if 'SenateDistrict' in dataPointDictionary else None,
+                CountyDistrict=dataPointDictionary['CountyDistrict']
+                    if 'CountyDistrict' in dataPointDictionary else None,
+                SchoolBoardDistrict=dataPointDictionary['SchoolBoardDistrict']
+                    if 'SchoolBoardDistrict' in dataPointDictionary else None
+                # ... For All Key Fields in the Student's/Student's Relative's Voter Registration
+                # Saved from Voter Record Page into DataPointDictionary
+            )
+            print(studentRelativeVoterRecord)
+            StudentRelativeVoterRecords.append(studentRelativeVoterRecord)
+            sleep(randint(20,25))
+        StudentRelativeVoterRecord_DF = pd.DataFrame(data=StudentRelativeVoterRecords)
         with pd.ExcelWriter(os.path.join(root, 'VoterRegistrationData', file),
                             mode='a') as writer:
-            StudentVoterRecord_DF.to_excel(writer, sheet_name='StudentVoterRegistrationData')
-        # with pd.ExcelWriter(os.path.join(root, 'VoterRegistrationData', file),
-        #                     mode='a') as writer:
-        #     StudentRelativeVoterRecord_DF.to_excel(writer, sheet_name='StudentRelativeVoterRegistrationData')
+            StudentRelativeVoterRecord_DF.to_excel(writer, sheet_name='StudentRelativeVoterRegistrationData')
