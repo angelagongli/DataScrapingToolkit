@@ -66,3 +66,38 @@ for file in os.listdir(root):
         with pd.ExcelWriter(os.path.join(root, 'StudentResults', file),
                             mode='a') as writer:
             IdentifiedStudent_DF.to_excel(writer, sheet_name='IdentifiedStudentResults')
+        # Keep all data required to uniquely identify the student the relative belongs to in
+        # Whole dataset in the IdentifiedStudentRelative, as well as all of the student's information
+        # Entered into the URL returning the StudentResult per Menaka's request
+        IdentifiedStudentRelative = collections.namedtuple('IdentifiedStudentRelative',
+            ['student_no', 'firstname', 'middlename', 'lastname',
+            'school', 'cohort', 'studentRelativeFirstName', 'studentRelativeMiddleName',
+            'studentRelativeLastName'])
+        IdentifiedStudentRelatives = []
+        for StudentResult in IdentifiedStudent_DF.itertuples(name='StudentResult'):
+            if StudentResult.resultType == 'Relatives':
+                IdentifiedStudentRelativeArr = StudentResult.resultData.split("*")
+                for StudentRelativeName in IdentifiedStudentRelativeArr:
+                    StudentRelativeNameArr = StudentRelativeName.split(" ")
+                    if len(StudentRelativeNameArr) == 2:
+                        studentRelativeFirstName = StudentRelativeNameArr[0]
+                        studentRelativeLastName = StudentRelativeNameArr[1]
+                    elif len(StudentRelativeNameArr) == 3:
+                        studentRelativeFirstName = StudentRelativeNameArr[0]
+                        studentRelativeMiddleName = StudentRelativeNameArr[1]
+                        studentRelativeLastName = StudentRelativeNameArr[2]
+                    elif len(StudentRelativeNameArr) > 3:
+                        studentRelativeFirstName = StudentRelativeNameArr[0]
+                        studentRelativeMiddleName = StudentRelativeNameArr[1]
+                        for namePiece in StudentRelativeNameArr[2:-1]:
+                            studentRelativeMiddleName = studentRelativeMiddleName + namePiece
+                        studentRelativeLastName = StudentRelativeNameArr[-1]
+                    identifiedStudentRelative = IdentifiedStudentRelative(StudentResult.student_no,
+                        StudentResult.firstname, StudentResult.middlename, StudentResult.lastname,
+                        StudentResult.school, StudentResult.cohort, studentRelativeFirstName,
+                        studentRelativeMiddleName, studentRelativeLastName)
+                    IdentifiedStudentRelatives.append(identifiedStudentRelative)
+        IdentifiedStudentRelative_DF = pd.DataFrame(data=IdentifiedStudentRelatives)
+        with pd.ExcelWriter(os.path.join(root, 'StudentResults', file),
+                            mode='a') as writer:
+            IdentifiedStudentRelative_DF.to_excel(writer, sheet_name='IdentifiedStudentRelatives')
