@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from bs4.element import NavigableString
 import collections
 from selenium import webdriver
 ChromeOptions = webdriver.ChromeOptions()
@@ -132,6 +133,32 @@ for file in os.listdir(root):
                         else:
                             dataPoint = dataTag.string
                     dataPointDictionary[labelString] = dataPoint
+            # Menaka has brought up the Related Records table of the Student's Voter Record page as well =>
+            # How do we verify the accuracy of the Student's Relative designation? Here we have not only the
+            # Designated Student's Relative's name but his/her full voter record as well, we are going based
+            # Entirely on the site's own algorithm but we can save the full voter record of all of the Student's
+            # Relatives returned in the Student's Voter Record per Menaka's request
+            studentRelatives = []
+            for relativeDiv in soup.find(id="related-voters").div:
+                if isinstance(relativeDiv, NavigableString):
+                    continue
+                relativeDataPointDictionary = {}
+                relativeInnerDiv = relativeDiv.div.div
+                relativeDataPointDictionary["relativeName"] = relativeInnerDiv.span.a.string
+                relativeDataPointDictionary["relativeVoterRecordURL"] = relativeInnerDiv.span.a['href']
+                relativeDataPointDictionary["relativeCity"] = relativeInnerDiv.find_all('span')[2].string
+                relativeDataPointDictionary["relativeState"] = relativeInnerDiv.find_all('span')[3].string
+                for dataPointLabelTag in relativeInnerDiv.find_all('strong'):
+                    dataPointLabel = dataPointLabelTag.string.strip()[:-1]
+                    dataPoint = ""
+                    if "Gender" in dataPointLabel:
+                        dataPoint = dataPointLabelTag.next_sibling.string
+                    elif "Party Affiliation" in dataPointLabel:
+                        dataPoint = dataPointLabelTag.next_sibling.next_sibling.string
+                    else:
+                        dataPoint = dataPointLabelTag.next_sibling
+                    relativeDataPointDictionary[dataPointLabel] = dataPoint
+                studentRelatives.append(relativeDataPointDictionary)
             studentRelativeVoterRecord = StudentRelativeVoterRecord(
                 student_no=StudentRelativeResult.student_no,
                 firstname=StudentRelativeResult.firstname,
