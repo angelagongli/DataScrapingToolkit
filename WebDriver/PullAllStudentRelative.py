@@ -48,6 +48,10 @@ for file in os.listdir(root):
                         continue
                     cursor = person.find_next()
                     resultName = cursor.span.span.a.get_text().strip()
+                    # Keep Only Exact First Name/Last Name Because the Relative's Name is All We Have to Go On
+                    if not (identifiedStudentRelative.studentRelativeFirstName.upper() in resultName.upper() and
+                    identifiedStudentRelative.studentRelativeLastName.upper() in resultName.upper()):
+                        continue
                     resultVoterRecordURL = cursor.span.span.a['href']
                     resultAge = ""
                     resultAgeExistingTag = cursor.span.find('strong', text=re.compile(".*Age.*"))
