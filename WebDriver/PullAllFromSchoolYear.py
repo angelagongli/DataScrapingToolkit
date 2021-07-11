@@ -157,6 +157,16 @@ for file in os.listdir(root):
                     # Only scrape the data required to identify the student we want
                     cursor = person.find_next()
                     resultName = cursor.span.span.a.get_text().strip()
+                    # We can start narrowing the StudentResult set right now at the point
+                    # When everything is still only on the page, saving only when the person's
+                    # Name exactly matches the student's first name/last name. We can save
+                    # Everything for the sake of completeness/documentation of the process as well
+                    # But for e.g. the married student with a new surname since college, if we
+                    # Save her as well hoping to correctly identify her downstream in our process,
+                    # Keep in mind we will still rule her out based on her name further on in our process
+                    if not (student.firstname.upper() in resultName.upper() and
+                    student.lastname.upper() in resultName.upper()):
+                        continue
                     resultVoterRecordURL = cursor.span.span.a['href']
                     resultAge = ""
                     resultAgeExistingTag = cursor.span.find('strong', text=re.compile(".*Age.*"))
