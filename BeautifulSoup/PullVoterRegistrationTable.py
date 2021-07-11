@@ -19,7 +19,7 @@ import os
 StudentVoterRecord = collections.namedtuple('StudentVoterRecord',
     # All Kept from StudentResult:
     ['student_no', 'firstname', 'middlename', 'lastname',
-    'school', 'cohort', 'resultName', 'resultAge', 'resultCity',
+    'school', 'cohort', 'city', 'state', 'resultName', 'resultAge', 'resultCity',
     # From Voter Registration Table:
     'PartyAffiliation','RegisteredtoVoteIn','RegistrationDate','VoterStatus',
     'StatusReason','Precinct','PrecinctSplit','Ward','CongressionalDistrict',
@@ -31,8 +31,10 @@ StudentRelativeVoterRecord = collections.namedtuple('StudentRelativeVoterRecord'
     # All Data Required to Uniquely Identify the Student the Relative Belongs to in
     # Whole Dataset Must Be Kept in Student's Relative Voter Record => Foreign Key
     # Based on the Composite Key
-    'student_no', 'firstname', 'middlename', 'lastname',
-    'school', 'cohort',
+    'student_no', 'school', 'cohort',
+    # All of the Student's Information Entered into the URL Returning the StudentResult
+    # In Turn Returning the Student's Relative Should be Saved per Menaka's Request:
+    'firstname', 'middlename', 'lastname', 'city', 'state',
     # Rest of Data Saved in Student's Relative Voter Record Is Purely Voter Registration Data
     'PartyAffiliation','RegisteredtoVoteIn','RegistrationDate','VoterStatus',
     'StatusReason','Precinct','PrecinctSplit','Ward','CongressionalDistrict',
@@ -71,6 +73,8 @@ for file in os.listdir(root):
                 lastname=StudentResult.lastname,
                 school=StudentResult.school,
                 cohort=StudentResult.cohort,
+                city=StudentResult.city,
+                state=StudentResult.state,
                 resultName=StudentResult.resultName,
                 resultAge=StudentResult.resultAge,
                 resultCity=StudentResult.resultCity,
@@ -135,6 +139,8 @@ for file in os.listdir(root):
                 lastname=StudentRelativeResult.lastname,
                 school=StudentRelativeResult.school,
                 cohort=StudentRelativeResult.cohort,
+                city=StudentResult.city,
+                state=StudentResult.state,
                 studentRelativeName=StudentRelativeResult.resultName,
                 # From Overview Table:
                 Livesin=dataPointDictionary['Livesin']
