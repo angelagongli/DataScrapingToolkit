@@ -14,7 +14,7 @@ for file in os.listdir(root):
     fullStudentResultFilePath = os.path.join(root, 'StudentResults', file)
     StudentResult = collections.namedtuple('StudentResult',
         ['student_no', 'firstname', 'middlename', 'lastname',
-        'school', 'cohort', 'resultName', 'resultAge',
+        'school', 'cohort', 'city', 'state', 'resultName', 'resultAge',
         'resultCity', 'resultCityHistory', 'resultType', 'resultData'])
     IdentifiedStudentResults = []
     if os.path.isfile(fullFilePath) and os.path.isfile(fullStudentResultFilePath):
@@ -71,8 +71,8 @@ for file in os.listdir(root):
         # Entered into the URL returning the StudentResult per Menaka's request
         IdentifiedStudentRelative = collections.namedtuple('IdentifiedStudentRelative',
             ['student_no', 'firstname', 'middlename', 'lastname',
-            'school', 'cohort', 'studentRelativeFirstName', 'studentRelativeMiddleName',
-            'studentRelativeLastName'])
+            'school', 'cohort', 'city', 'state', 'studentRelativeFirstName',
+            'studentRelativeMiddleName', 'studentRelativeLastName'])
         IdentifiedStudentRelatives = []
         for StudentResult in IdentifiedStudent_DF.itertuples(name='StudentResult'):
             if StudentResult.resultType == 'Relatives':
@@ -94,8 +94,9 @@ for file in os.listdir(root):
                         studentRelativeLastName = StudentRelativeNameArr[-1]
                     identifiedStudentRelative = IdentifiedStudentRelative(StudentResult.student_no,
                         StudentResult.firstname, StudentResult.middlename, StudentResult.lastname,
-                        StudentResult.school, StudentResult.cohort, studentRelativeFirstName,
-                        studentRelativeMiddleName, studentRelativeLastName)
+                        StudentResult.school, StudentResult.cohort, StudentResult.city,
+                        StudentResult.state, studentRelativeFirstName, studentRelativeMiddleName,
+                        studentRelativeLastName)
                     IdentifiedStudentRelatives.append(identifiedStudentRelative)
         IdentifiedStudentRelative_DF = pd.DataFrame(data=IdentifiedStudentRelatives)
         with pd.ExcelWriter(os.path.join(root, 'StudentResults', file),
