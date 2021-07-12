@@ -47,6 +47,7 @@ for file in os.listdir(root):
     fullFilePath = os.path.join(root, file)
     fullStudentResultFilePath = os.path.join(root, 'StudentResults', file)
     StudentVoterRecords = []
+    StudentRelativeResults = []
     StudentRelativeVoterRecords = []
     if os.path.isfile(fullFilePath) and os.path.isfile(fullStudentResultFilePath):
         StudentResult_DF = pd.read_excel(fullStudentResultFilePath, sheet_name='IdentifiedStudentResults')
@@ -111,34 +112,16 @@ for file in os.listdir(root):
             )
             print(studentVoterRecord)
             StudentVoterRecords.append(studentVoterRecord)
-            sleep(randint(20,25))
-        StudentVoterRecord_DF = pd.DataFrame(data=StudentVoterRecords)
-        if not os.path.isdir(os.path.join(root, 'VoterRegistrationData')):
-            os.mkdir(os.path.join(root, 'VoterRegistrationData'))
-        StudentVoterRecord_DF.to_excel(os.path.join(root, 'VoterRegistrationData', file), sheet_name='StudentVoterRegistrationData')
-        StudentRelativeResult_DF = pd.read_excel(fullStudentResultFilePath, sheet_name='IdentifiedStudentRelativeResults')
-        for StudentRelativeResult in StudentRelativeResult_DF.itertuples(name='StudentRelativeResult'):
-            driver.get(f"https://voterrecords.com{StudentRelativeResult.resultVoterRecordURL}")
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            dataPointDictionary = {}
-            for tableColumn in soup.find(id="overview").find_all('div') + \
-                soup.find(id="voter-registration").find_all('div'):
-                for label in tableColumn.find_all('strong'):
-                    labelString = label.string.replace(":","").replace(" ","").strip()
-                    dataTag = label.find_next_sibling()
-                    dataPoint = ""
-                    if dataTag:
-                        if dataTag.name == "br":
-                            dataPoint = label.next_element.next_element
-                        else:
-                            dataPoint = dataTag.string
-                    dataPointDictionary[labelString] = dataPoint
             # Menaka has brought up the Related Records table of the Student's Voter Record page as well =>
             # How do we verify the accuracy of the Student's Relative designation? Here we have not only the
             # Designated Student's Relative's name but his/her full voter record as well, we are going based
             # Entirely on the site's own algorithm but we can save the full voter record of all of the Student's
             # Relatives returned in the Student's Voter Record per Menaka's request
-            studentRelatives = []
+            StudentRelativeResult = collections.namedtuple('StudentRelativeResult',
+            ['student_no', 'firstname', 'middlename', 'lastname',
+            'school', 'cohort', 'city', 'state', 'studentRelativeFirstName',
+            'studentRelativeMiddleName', 'studentRelativeLastName', 'resultName',
+            'resultAge', 'resultCity', 'resultVoterRecordURL'])
             for relativeDiv in soup.find(id="related-voters").div:
                 if isinstance(relativeDiv, NavigableString):
                     continue
@@ -158,7 +141,63 @@ for file in os.listdir(root):
                     else:
                         dataPoint = dataPointLabelTag.next_sibling
                     relativeDataPointDictionary[dataPointLabel] = dataPoint
-                studentRelatives.append(relativeDataPointDictionary)
+                studentRelativeResult = StudentRelativeResult(student_no=StudentResult.student_no,
+                    firstname=StudentResult.firstname,
+                    middlename=StudentResult.middlename,
+                    lastname=StudentResult.lastname,
+                    school=StudentResult.school,
+                    cohort=StudentResult.cohort,
+                    city=StudentResult.city,
+                    state=StudentResult.state,
+                    # The Student Relative directly identified in the Student's Voter Record does not
+                    # Require the breaking of the student's relative's name into First, Middle and Last Name to
+                    # Document/preserve the name entered into the URL returning the Student Relative in the way
+                    # We have required for the Student Relative name from TruthFinder
+                    studentRelativeFirstName=None,
+                    studentRelativeMiddleName=None,
+                    studentRelativeLastName=None,
+                    # From Related Records Table:
+                    resultName=dataPointDictionary['relativeName']
+                        if 'relativeName' in dataPointDictionary else None,
+                    resultAge=dataPointDictionary['Age']
+                        if 'Age' in dataPointDictionary else None,
+                    resultCity=dataPointDictionary['relativeCity']
+                        if 'relativeCity' in dataPointDictionary else None,
+                    resultVoterRecordURL=dataPointDictionary['relativeVoterRecordURL']
+                        if 'relativeVoterRecordURL' in dataPointDictionary else None)
+                StudentRelativeResults.append(studentRelativeResult)
+            sleep(randint(20,25))
+        StudentVoterRecord_DF = pd.DataFrame(data=StudentVoterRecords)
+        StudentRelativeResult_DF = pd.DataFrame(data=StudentRelativeResults)
+        if not os.path.isdir(os.path.join(root, 'VoterRegistrationData')):
+            os.mkdir(os.path.join(root, 'VoterRegistrationData'))
+        StudentVoterRecord_DF.to_excel(os.path.join(root, 'VoterRegistrationData', file), sheet_name='StudentVoterRegistrationData')
+        with pd.ExcelWriter(os.path.join(root, 'StudentResults', file),
+                            mode='a') as writer:
+            StudentRelativeResult_DF.to_excel(writer, sheet_name='IdentifiedStudentRelativeResultsFromStudentVoterRecord')
+        # Now read back in the IdentifiedStudentRelativeResults sheet as well as the newly appended
+        # IdentifiedStudentRelativeResultsFromStudentVoterRecord sheet of StudentRelativeResults from
+        # Student Voter Record for the full set of StudentRelativeResults:
+        StudentRelativeResult_DF = pd.read_excel(fullStudentResultFilePath, sheet_name='IdentifiedStudentRelativeResults')
+        StudentRelativeResultFromStudentVoterRecord_DF = pd.read_excel(fullStudentResultFilePath,
+            sheet_name='IdentifiedStudentRelativeResultsFromStudentVoterRecord')
+        StudentRelativeResult_DF.append(StudentRelativeResultFromStudentVoterRecord_DF)
+        for StudentRelativeResult in StudentRelativeResult_DF.itertuples(name='StudentRelativeResult'):
+            driver.get(f"https://voterrecords.com{StudentRelativeResult.resultVoterRecordURL}")
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            dataPointDictionary = {}
+            for tableColumn in soup.find(id="overview").find_all('div') + \
+                soup.find(id="voter-registration").find_all('div'):
+                for label in tableColumn.find_all('strong'):
+                    labelString = label.string.replace(":","").replace(" ","").strip()
+                    dataTag = label.find_next_sibling()
+                    dataPoint = ""
+                    if dataTag:
+                        if dataTag.name == "br":
+                            dataPoint = label.next_element.next_element
+                        else:
+                            dataPoint = dataTag.string
+                    dataPointDictionary[labelString] = dataPoint
             studentRelativeVoterRecord = StudentRelativeVoterRecord(
                 student_no=StudentRelativeResult.student_no,
                 firstname=StudentRelativeResult.firstname,
