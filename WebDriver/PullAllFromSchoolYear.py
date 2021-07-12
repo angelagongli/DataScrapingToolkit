@@ -103,7 +103,8 @@ for file in os.listdir(root):
                     nameString = f"{student.firstname}+{student.lastname}"
                 if "-" in student.name:
                     nameString = nameString.replace("-", "+")
-                cityState = student.city.replace(" ","+") + "-" + US_StateAbbreviationLookUp[student.state.upper()]
+                cityState = student.city.replace(" ","+") + "-" + (US_StateAbbreviationLookUp[student.state.upper()]
+                    if student.state.upper() in US_StateAbbreviationLookUp.keys() else student.state.upper())
                 queryString = f"{cityState}/{nameString}"
             elif student.middlename.strip():
                 queryString = f"{student.firstname}-{student.middlename}-{student.lastname}"
@@ -117,6 +118,14 @@ for file in os.listdir(root):
             voterRecordNumber = headerRegexMatch.group(2)
             if voterRecordNumber == "0":
                 print("Pulling Student's Relative Data from TruthFinder...")
+                # TO ASK Question for Menaka: How does Menaka hope to study the relationship between the
+                # Student's major choice and political beliefs, here adding as well the dimension of the
+                # Student's family's political beliefs to her main research question, when
+                # We do not have the most crucial piece of data, the Student's Voter Record?
+                # How then can it be helpful to scrape the additional information of the Student's
+                # Relative's voter registration data when we cannot be analyzing it vis-a-vis
+                # Our main data point that the student's family's political belief component would
+                # Hopefully just shed additional light upon?
                 for link in soup.find_all('a', string="That's The One!"):
                     relativeString = ""
                     cityString = ""
