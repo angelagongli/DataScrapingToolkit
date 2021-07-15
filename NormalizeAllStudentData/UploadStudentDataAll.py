@@ -79,36 +79,52 @@ for file in os.listdir(root):
     firstStudent = df.iloc[0]
     if not hasattr(firstStudent, "major"):
       continue
-    print(f"Now Processing {firstStudent.school}...")
+    year = firstStudent.cohort if hasattr(firstStudent, "cohort") else firstStudent.cohort_yr
+    print(f"Now Processing {firstStudent.school} in {year}...")
     Students = []
     for student in df.itertuples(name='Student'):
-      if (pd.isna(student.school) or (pd.isna(student.cohort)
-        if hasattr(student, "cohort") else pd.isna(student.cohort_yr)) or
-        pd.isna(student.firstname) or pd.isna(student.lastname) or
-        pd.isna(student.major)):
+      if (pd.isna(student.school) or not student.school.strip() or
+        ((pd.isna(student.cohort) or not student.cohort.strip())
+        if hasattr(student, "cohort") else
+        (pd.isna(student.cohort_yr) or not student.cohort_yr.strip())) or
+        pd.isna(student.firstname) or not student.firstname.strip() or
+        pd.isna(student.lastname) or not student.lastname.strip() or
+        pd.isna(student.major) or not student.major.strip()):
         continue
+      if (pd.isna(student.middlename) or not student.middlename.strip()):
+        middleName = None
+      else:
+        middleName = student.middlename.upper().strip()
+      if (hasattr(student, "city") and not pd.isna(student.city) and student.city.strip()):
+        city = student.city.upper().strip()
+      else:
+        city = None
+      if (hasattr(student, "state") and not pd.isna(student.state) and student.state.strip()):
+        if student.state.upper().strip() in US_StateAbbreviationLookUp.keys():
+          state = US_StateAbbreviationLookUp[student.state.upper().strip()]
+        else:
+          state = student.state.upper().strip()
+      else:
+        state = None
+      if (hasattr(student, "country") and not pd.isna(student.country) and student.country.strip()):
+        country = student.country.upper().strip()
+      else:
+        country = None
       Student = {
         'school': student.school.upper().strip(),
         'cohort': student.cohort if hasattr(student, "cohort") else student.cohort_yr,
         'firstName': student.firstname.upper().strip(),
-        'middleName': student.middlename.upper().strip() if not pd.isna(student.middlename) else None,
+        'middleName': middleName,
         'lastName': student.lastname.upper().strip(),
         'major': student.major.upper().strip(),
-        'city': (student.city.upper().strip() if not pd.isna(student.city) else None)
-          if hasattr(student, "city") else None,
-        'state': ((US_StateAbbreviationLookUp[student.state.upper().strip()]
-          if student.state.upper().strip() in US_StateAbbreviationLookUp.keys()
-          else student.state.upper().strip())
-          if not pd.isna(student.state) else None)
-          if hasattr(student, "state") else None,
-        'country': (student.country.upper().strip()
-          if not pd.isna(student.country) else None)
-          if hasattr(student, "country") else None
+        'city': city,
+        'state': state,
+        'country': country
       }
       Students.append(Student)
     cursor.executemany(add_student, Students)
-
-cnx.commit()
+    cnx.commit()
+    print(f"Upload of {firstStudent.school} in {year} complete!")
 
 cursor.close()
 cnx.close()
