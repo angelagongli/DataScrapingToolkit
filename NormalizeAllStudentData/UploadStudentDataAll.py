@@ -84,9 +84,8 @@ for file in os.listdir(root):
     Students = []
     for student in df.itertuples(name='Student'):
       if (pd.isna(student.school) or not student.school.strip() or
-        ((pd.isna(student.cohort) or not student.cohort.strip())
-        if hasattr(student, "cohort") else
-        (pd.isna(student.cohort_yr) or not student.cohort_yr.strip())) or
+        (pd.isna(student.cohort) if hasattr(student, "cohort") else
+        pd.isna(student.cohort_yr)) or
         pd.isna(student.firstname) or not student.firstname.strip() or
         pd.isna(student.lastname) or not student.lastname.strip() or
         pd.isna(student.major) or not student.major.strip()):
