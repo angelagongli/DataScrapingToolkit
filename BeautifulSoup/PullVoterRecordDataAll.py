@@ -24,8 +24,8 @@ innerCursor = cnx.cursor(buffered=True)
 # Pull Identified Student/StudentRelative Results
 pull_studentresults = ("SELECT id, student_id, resultName, resultData FROM StudentResults "
                     "WHERE student_id<=100 AND resultType='StudentVoterRecord' AND identificationStep='Identified'")
-# pull_studentrelativeresults = ("SELECT id, student_id, relativeResultName, relativeResultVoterRecordURL FROM StudentRelativeResults "
-#                     "WHERE student_id<=100 AND identificationStep='Identified'")
+pull_studentrelativeresults = ("SELECT id, student_id, relativeResultName, relativeResultVoterRecordURL FROM StudentRelativeResults "
+                    "WHERE student_id<=100 AND identificationStep='Identified'")
 
 insert_voterrecord = ("INSERT INTO VoterRecords "
     "(student_id, studentRelative_id, partyAffiliation, registeredToVoteIn, "
@@ -36,13 +36,15 @@ insert_voterrecord = ("INSERT INTO VoterRecords "
     "%(registrationDate)s, %(voterStatus)s, %(statusReason)s, %(precinct)s, "
     "%(precinctSplit)s, %(ward)s, %(congressionalDistrict)s, %(houseDistrict)s, "
     "%(senateDistrict)s, %(countyDistrict)s, %(schoolBoardDistrict)s, %(voterRecordType)s)")
+# Keep the fullness of information saved in the StudentRelativeResult sourced from the Student's
+# Voter Record even with that of the StudentRelativeResult sourced from the Student's Relatives
+# Returned by TruthFinder => We can only fully analyze StudentRelativeResults on the set of characteristics
+# Possessed by the whole set of StudentRelativeResults
 insert_studentrelativeresult = ("INSERT INTO StudentRelativeResults "
-    "(student_id, relativeResultName, relativeResultAge, "
-    "relativeResultCity, relativeResultGender, relativeResultRace, "
-    "relativeResultVoterRecordURL, relativeResultSource, identificationStep) "
-    "VALUES (%(student_id)s, %(relativeResultName)s, %(relativeResultAge)s, "
-    "%(relativeResultCity)s, %(relativeResultGender)s, %(relativeResultRace)s "
-    "%(relativeResultVoterRecordURL)s, %(relativeResultSource)s, %(identificationStep)s)")
+    "(student_id, relativeResultName, relativeResultVoterRecordURL, "
+    "relativeResultSource, identificationStep) "
+    "VALUES (%(student_id)s, %(relativeResultName)s, %(relativeResultVoterRecordURL)s, "
+    "%(relativeResultSource)s, %(identificationStep)s)")
 
 outerCursor.execute(pull_studentresults)
 
@@ -124,19 +126,79 @@ for (id, student_id, resultName, resultData) in outerCursor:
             else:
                 dataPoint = str(dataPointLabelTag.next_sibling)
             relativeDataPointDictionary[dataPointLabel] = dataPoint
+        # Keep the fullness of information saved in the StudentRelativeResult sourced from the Student's
+        # Voter Record even with that of the StudentRelativeResult sourced from the Student's Relatives
+        # Returned by TruthFinder => We can only fully analyze StudentRelativeResults on the set of characteristics
+        # Possessed by the whole set of StudentRelativeResults
         StudentRelativeResult = {
             'student_id': student_id,
             'relativeResultName': relativeDataPointDictionary['relativeName'],
-            'relativeResultAge': relativeDataPointDictionary['Age'],
-            'relativeResultCity': relativeDataPointDictionary['relativeCity'] + ", " + relativeDataPointDictionary['relativeState'],
-            'relativeResultGender': relativeDataPointDictionary['Gender'],
-            'relativeResultRace': relativeDataPointDictionary['Race'],
             'relativeResultVoterRecordURL': relativeDataPointDictionary['relativeVoterRecordURL'],
             'relativeResultSource': 'StudentVoterRecord',
+            # We save the set of designated Student's Relatives from the Student's Voter Record
+            # Per Menaka's request => We will just have to trust the goodness of the site's own algorithm
             'identificationStep': 'Identified'
         }
         StudentRelativeResults.append(StudentRelativeResult)
     innerCursor.executemany(insert_studentrelativeresult, StudentRelativeResults)
+    cnx.commit()
+    sleep(randint(20,25))
+
+outerCursor.execute(pull_studentrelativeresults)
+
+for (id, student_id, relativeResultName, relativeResultVoterRecordURL) in outerCursor:
+    driver.get(f"https://voterrecords.com{relativeResultVoterRecordURL}")
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    dataPointDictionary = {}
+    for tableColumn in soup.find(id="overview").find_all('div') + \
+        soup.find(id="voter-registration").find_all('div'):
+        for label in tableColumn.find_all('strong'):
+            labelString = label.string.replace(":","").replace(" ","").strip()
+            dataTag = label.find_next_sibling()
+            dataPoint = ""
+            if dataTag:
+                if dataTag.name == "br":
+                    dataPoint = str(label.next_element.next_element)
+                else:
+                    dataPoint = dataTag.get_text()
+            dataPointDictionary[labelString] = dataPoint
+    StudentRelativeVoterRecord = {
+        'student_id': student_id,
+        'studentRelative_id': id,
+        # From Voter Registration Table:
+        'partyAffiliation': dataPointDictionary['PartyAffiliation']
+            if 'PartyAffiliation' in dataPointDictionary else None,
+        'registeredToVoteIn': dataPointDictionary['RegisteredtoVoteIn']
+            if 'RegisteredtoVoteIn' in dataPointDictionary else None,
+        'registrationDate': datetime.date(int(dataPointDictionary['RegistrationDate'][-4:]),
+            int(dataPointDictionary['RegistrationDate'][0:2]),
+            int(dataPointDictionary['RegistrationDate'][3:5]))
+            if 'RegistrationDate' in dataPointDictionary else None,
+        'voterStatus': dataPointDictionary['VoterStatus']
+            if 'VoterStatus' in dataPointDictionary else None,
+        'statusReason': dataPointDictionary['StatusReason']
+            if 'StatusReason' in dataPointDictionary else None,
+        'precinct': dataPointDictionary['Precinct']
+            if 'Precinct' in dataPointDictionary else None,
+        'precinctSplit': dataPointDictionary['PrecinctSplit']
+            if 'PrecinctSplit' in dataPointDictionary else None,
+        'ward': dataPointDictionary['Ward']
+            if 'Ward' in dataPointDictionary else None,
+        'congressionalDistrict': dataPointDictionary['CongressionalDistrict']
+            if 'CongressionalDistrict' in dataPointDictionary else None,
+        'houseDistrict': dataPointDictionary['HouseDistrict']
+            if 'HouseDistrict' in dataPointDictionary else None,
+        'senateDistrict': dataPointDictionary['SenateDistrict']
+            if 'SenateDistrict' in dataPointDictionary else None,
+        'countyDistrict': dataPointDictionary['CountyDistrict']
+            if 'CountyDistrict' in dataPointDictionary else None,
+        'schoolBoardDistrict': dataPointDictionary['SchoolBoardDistrict']
+            if 'SchoolBoardDistrict' in dataPointDictionary else None,
+        # ... For All Key Fields in the Student's/Student's Relative's Voter Registration
+        # Saved from Voter Record Page into DataPointDictionary
+        'voterRecordType': 'StudentRelativeVoterRecord'
+    }
+    innerCursor.execute(insert_voterrecord, StudentRelativeVoterRecord)
     cnx.commit()
     sleep(randint(20,25))
 
