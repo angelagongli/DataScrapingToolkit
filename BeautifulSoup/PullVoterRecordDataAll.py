@@ -10,6 +10,7 @@ driver = webdriver.Chrome(executable_path='C:\Program Files (x86)\ChromeDriver\c
 from random import randint
 from time import sleep
 from bs4 import BeautifulSoup
+from bs4.element import NavigableString
 import datetime
 import mysql.connector
 
@@ -35,6 +36,13 @@ insert_voterrecord = ("INSERT INTO VoterRecords "
     "%(registrationDate)s, %(voterStatus)s, %(statusReason)s, %(precinct)s, "
     "%(precinctSplit)s, %(ward)s, %(congressionalDistrict)s, %(houseDistrict)s, "
     "%(senateDistrict)s, %(countyDistrict)s, %(schoolBoardDistrict)s, %(voterRecordType)s)")
+insert_studentrelativeresult = ("INSERT INTO StudentRelativeResults "
+    "(student_id, relativeResultName, relativeResultAge, "
+    "relativeResultCity, relativeResultGender, relativeResultRace, "
+    "relativeResultVoterRecordURL, relativeResultSource, identificationStep) "
+    "VALUES (%(student_id)s, %(relativeResultName)s, %(relativeResultAge)s, "
+    "%(relativeResultCity)s, %(relativeResultGender)s, %(relativeResultRace)s "
+    "%(relativeResultVoterRecordURL)s, %(relativeResultSource)s, %(identificationStep)s)")
 
 outerCursor.execute(pull_studentresults)
 
@@ -91,6 +99,44 @@ for (id, student_id, resultName, resultData) in outerCursor:
         'voterRecordType': 'StudentVoterRecord'
     }
     innerCursor.execute(insert_voterrecord, StudentVoterRecord)
+    StudentRelativeResults = []
+    # Menaka has brought up the Related Records table of the Student's Voter Record page as well =>
+    # How do we verify the accuracy of the Student's Relative designation? Here we have not only the
+    # Designated Student's Relative's name but his/her full voter record as well, we are going based
+    # Entirely on the site's own algorithm but we can save the full voter record of all of the Student's
+    # Relatives returned in the Student's Voter Record per Menaka's request
+    for relativeDiv in soup.find(id="related-voters").div:
+        if isinstance(relativeDiv, NavigableString):
+            continue
+        relativeDataPointDictionary = {}
+        relativeInnerDiv = relativeDiv.div.div
+        relativeDataPointDictionary["relativeName"] = relativeInnerDiv.span.a.get_text()
+        relativeDataPointDictionary["relativeVoterRecordURL"] = relativeInnerDiv.span.a['href']
+        relativeDataPointDictionary["relativeCity"] = relativeInnerDiv.find_all('span')[2].get_text()
+        relativeDataPointDictionary["relativeState"] = relativeInnerDiv.find_all('span')[3].get_text()
+        for dataPointLabelTag in relativeInnerDiv.find_all('strong'):
+            dataPointLabel = dataPointLabelTag.string.strip()[:-1]
+            dataPoint = ""
+            if "Gender" in dataPointLabel:
+                dataPoint = dataPointLabelTag.next_sibling.get_text()
+            elif "Party Affiliation" in dataPointLabel:
+                dataPoint = dataPointLabelTag.next_sibling.next_sibling.get_text()
+            else:
+                dataPoint = str(dataPointLabelTag.next_sibling)
+            relativeDataPointDictionary[dataPointLabel] = dataPoint
+        StudentRelativeResult = {
+            'student_id': student_id,
+            'relativeResultName': relativeDataPointDictionary['relativeName'],
+            'relativeResultAge': relativeDataPointDictionary['Age'],
+            'relativeResultCity': relativeDataPointDictionary['relativeCity'] + ", " + relativeDataPointDictionary['relativeState'],
+            'relativeResultGender': relativeDataPointDictionary['Gender'],
+            'relativeResultRace': relativeDataPointDictionary['Race'],
+            'relativeResultVoterRecordURL': relativeDataPointDictionary['relativeVoterRecordURL'],
+            'relativeResultSource': 'StudentVoterRecord',
+            'identificationStep': 'Identified'
+        }
+        StudentRelativeResults.append(StudentRelativeResult)
+    innerCursor.executemany(insert_studentrelativeresult, StudentRelativeResults)
     cnx.commit()
     sleep(randint(20,25))
 
