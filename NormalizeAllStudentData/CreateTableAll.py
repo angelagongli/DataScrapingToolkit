@@ -62,6 +62,7 @@ TABLES['StudentRelativeResults'] = (
     "  `relativeResultRace` varchar(100),"
     "  `relativeResultVoterRecordURL` varchar(100) NOT NULL,"
     "  `relativeResultSource` enum('StudentVoterRecord','StudentRelatives') NOT NULL,"
+    "  `identificationStep` enum('Not Identified','First Pass','Refined','Identified') NOT NULL DEFAULT 'Not Identified',"
     "  PRIMARY KEY (`id`),"
     "  FOREIGN KEY (`student_id`)"
     "     REFERENCES `Students`(`id`)"
