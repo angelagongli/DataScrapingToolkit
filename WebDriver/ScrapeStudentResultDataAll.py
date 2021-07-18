@@ -28,7 +28,7 @@ pull_schoolyear = ("SELECT id, firstName, middleName, lastName, "
                     "city, state, country FROM Students "
                     "WHERE school=%s AND cohort=%s")
 
-insert_student = ("INSERT INTO StudentResults "
+insert_studentresult = ("INSERT INTO StudentResults "
     "(student_id, resultName, resultAge, resultCity, "
     "resultCityHistory, resultType, resultData) "
     "VALUES (%(student_id)s, %(resultName)s, %(resultAge)s, %(resultCity)s, "
@@ -59,7 +59,7 @@ for (id, firstName, middleName, lastName, city, state, country) in outerCursor:
     headerRegexMatch = headerRegex.match(header)
     voterRecordNumber = headerRegexMatch.group(2)
     if voterRecordNumber == "0":
-        print("Pulling Student's Relative Data from TruthFinder...")
+        print(f"Pulling {firstName} {lastName}'s Relative Data from TruthFinder...")
         # TO ASK Question for Menaka: How does Menaka hope to study the relationship between the
         # Student's major choice and political beliefs, here adding as well the dimension of the
         # Student's family's political beliefs to her main research question, when
@@ -100,7 +100,7 @@ for (id, firstName, middleName, lastName, city, state, country) in outerCursor:
             }
             StudentResults.append(StudentResult)
     else:
-        print("Pulling All from First Page...")
+        print(f"Pulling All from {firstName} {lastName}'s First Page...")
         for person in soup.find_all('tr'):
             if person.find_next().name == "th":
                 print("Header")
@@ -125,12 +125,12 @@ for (id, firstName, middleName, lastName, city, state, country) in outerCursor:
             resultAge = ""
             resultAgeExistingTag = driverCursor.span.find('strong', text=re.compile(".*Age.*"))
             if resultAgeExistingTag is not None:
-                resultAge = resultAgeExistingTag.next_element.next_element
+                resultAge = str(resultAgeExistingTag.next_element.next_element)
             driverCursor = driverCursor.find_next_sibling()
             resultCity = ""
             resultCityExistingTag = driverCursor.find('strong', text=re.compile(".*Residential Address.*"))
             if resultCityExistingTag is not None:
-                resultCity = resultCityExistingTag.find_next('span').string
+                resultCity = resultCityExistingTag.find_next('span').get_text()
             StudentResult = {
                 'student_id': id,
                 'resultName': resultName,
@@ -141,7 +141,7 @@ for (id, firstName, middleName, lastName, city, state, country) in outerCursor:
                 'resultData': resultVoterRecordURL
             }
             StudentResults.append(StudentResult)
-    innerCursor.executemany(insert_student, StudentResults)
+    innerCursor.executemany(insert_studentresult, StudentResults)
     cnx.commit()
     sleep(randint(20,25))
 
