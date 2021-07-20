@@ -33,7 +33,7 @@ for file in os.listdir(root):
             if identifiedStudentRelative.studentRelativeMiddleName.strip():
                 queryString = f"{identifiedStudentRelative.studentRelativeFirstName}-{identifiedStudentRelative.studentRelativeMiddleName}-{identifiedStudentRelative.studentRelativeLastName}"
             else:
-                queryString = f"{identifiedStudentRelative.studentRelativeFirstName}-{identifiedStudentRelative.studentRelativeFirstName}"
+                queryString = f"{identifiedStudentRelative.studentRelativeFirstName}-{identifiedStudentRelative.studentRelativeLastName}"
             driver.get(f"https://voterrecords.com/voters/{queryString}/1")
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             header = soup.find(attrs={"class":"BottomMargin10 TopH1"}).contents[1]
