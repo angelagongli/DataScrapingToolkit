@@ -21,11 +21,12 @@ cnx = mysql.connector.connect(user='root',
 outerCursor = cnx.cursor(buffered=True)
 innerCursor = cnx.cursor(buffered=True)
 
-# Pull Identified Student/StudentRelative Results
+# Pull All Student/StudentRelative Results => Menaka wants us to scrape
+# All of the voter records returned *before* the narrowing/identification process
 pull_studentresults = ("SELECT id, student_id, resultName, resultData FROM StudentResults "
-                    "WHERE student_id<=100 AND resultType='StudentVoterRecord' AND identificationStep='Identified'")
+                    "WHERE student_id<=100 AND resultType='StudentVoterRecord'")
 pull_studentrelativeresults = ("SELECT id, student_id, relativeResultName, relativeResultVoterRecordURL FROM StudentRelativeResults "
-                    "WHERE student_id<=100 AND identificationStep='Identified'")
+                    "WHERE student_id<=100")
 
 insert_voterrecord = ("INSERT INTO VoterRecords "
     "(student_id, studentRelative_id, partyAffiliation, registeredToVoteIn, "
