@@ -35,3 +35,39 @@ To Be Resolved if Menaka is interested in pursuing the student/student relative 
   * If the Student returns only one result from TruthFinder, save the one result's Student/Student's Relatives and repeat the whole cycle for all of the one result's designated list of relatives returned by TruthFinder
   * If the Student returns more than one result from TruthFinder, save only the list of Student/Student's Relatives returned by TruthFinder and hold on before repeating the whole cycle so we can return to the identification of the Student/the whole process for the Student's Relatives once we do have the Student's Voter Record from Menaka's co-author's voter registration data gathering process if the Student does come up in the requested dataset
 * Party Affiliation is the only data point Menaka thinks we need to be able to study the student's political belief, but Menaka still wants us to scrape all of the detailed voter registration data e.g. Registration Date, House District/Senate District contained in the Student's Voter Record on voterrecords.com
+
+
+## Guide to Building the Student/Student Relative Voter Registration Dataset for Yourself
+
+### Background
+* Our starting point for building our Student/Student Relative Voter Registration dataset is Menaka's commencement program data gathered from all of the individual schools in her dataset
+* We have just a couple of tools in our toolkit:
+  * [Selenium WebDriver](https://www.selenium.dev/documentation/webdriver/) and [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) are our way of navigating voterrecords.com and then finding all of the data we want to scrape from the site
+  * We house all of our student/student relative voter registration data in one place, i.e. our [MySQL](https://dev.mysql.com/) database
+  * [MySQL Connector/Python](https://dev.mysql.com/doc/connector-python/en/) is our way of bridging the divide between our normalization/data scraping process from voterrecords.com and our DB for storing our data
+  * [MySQL Workbench](https://dev.mysql.com/doc/workbench/en/) is helpful GUI for MySQL
+* We are pulling new voter registration data from [voterrecords.com](voterrecords.com) for all of the students in Menaka's commencement program dataset as well as their relatives to add back to Menaka's original student dataset
+* Our hope is that we can accurately and cleanly organize all of our student/student relative data starting from Menaka's commencement program data that we are reading in at the beginning to our voter registration data that we are scraping from voterrecords.com and then all the way through our entire process of identifying the student from our scraped data
+
+
+### What do all of our files do?
+Only the following files in the repository will be helpful for you in building our Student/Student Relative Voter Registration dataset, the rest is my brainstorming/from my earlier draft:
+* `NormalizeAllStudentData\CreateTableAll.py`:
+  * Generates the DB schema
+  * You should first create **Student_DB** in your local MySQL instance!
+* `NormalizeAllStudentData\UploadStudentDataAll.py`:
+  * Normalizes and uploads all of the student data from Menaka's individual commencement program Excel files to our **Student_DB.Students** table
+* `WebDriver\ScrapeStudentResultDataAll.py`
+  * We navigate voterrecords.com searching for all of the students in our dataset one by one, entering the student's full name, city and state and saving their resulting data in our **Student_DB.StudentResults** table:
+    * When the student does not return voter records on voterrecords.com, the data we save is the student's list of relatives returned by TruthFinder
+    * When the student does return 1+ voter record on voterrecords.com, the data we save is the first page of the student's voter records on voterrecords.com
+* `AnalyzeAllStudentResultData\IdentifyDesiredStudent.py`:
+  * We narrow down our saved data for every student in our dataset one by one based on the student's name, expected age, city and state
+  * Per Menaka, we will need to narrow down/identify the student by hand as well so we want to be saving all the data we can from voterrecords.com in order to have the most complete information possible for our manual process
+* `BeautifulSoup\PullVoterRecordDataAll.py`:
+  * For all of the students in our dataset who do return a voter record, we save all of the student's first page of voter records returned under the student's name, city and state on voterrecords.com into our **Student_DB.VoterRecords** table
+
+
+### Reference
+
+* [Helpful guide on Selenium WebDriver configuration for web data scraping](https://blog.m157q.tw/posts/2020/09/11/bypass-cloudflare-detection-while-using-selenium-with-chromedriver/) from Menaka
