@@ -64,6 +64,7 @@ Only the following files in the repository will be helpful for you in building o
 * `AnalyzeAllStudentResultData\IdentifyDesiredStudent.py`:
   * We narrow down our saved data for every student in our dataset one by one based on the student's name, expected age, city and state
   * Per Menaka, we will need to narrow down/identify the student by hand as well so we want to be saving all the data we can from voterrecords.com in order to have the most complete information possible for our manual process
+  * And then it grabs the list of TruthFinder results stored in an asterisk delimited string in the identified student's record and parses the names to construct querystrings for searching for voter record results to inserting **Student_DB.StudentRelativeResults**
 * `BeautifulSoup\PullVoterRecordDataAll.py`:
   * For all of the students in our dataset who do return a voter record, we save all of the student's first page of voter records returned under the student's name, city and state on voterrecords.com into our **Student_DB.VoterRecords** table
 
