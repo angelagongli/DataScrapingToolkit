@@ -95,7 +95,7 @@ for i in range(1, 100):
 
     # Once the desired Student is identified and when the desired Student's StudentResult
     # Contains the Student's Relative data, we generate all of the Student's StudentRelativeResults,
-    # Trusting the accuracy of TruthFinder's designation of the Student's Relatives
+    # Remembering that the results shown are only a designation of relatedness as accurate as TruthFinder.com
     for (id, resultName, resultAge, resultCity, resultCityHistory, resultType, resultData) in outerCursor:
         if resultType == "StudentRelatives":
             IdentifiedStudentRelativeNames = resultData.split("*")
