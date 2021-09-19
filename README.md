@@ -35,7 +35,7 @@ To Be Resolved if Menaka is interested in pursuing the student/student relative 
   * If the Student returns only one result from TruthFinder, save the one result's Student/Student's Relatives and repeat the whole cycle for all of the one result's designated list of relatives returned by TruthFinder
   * If the Student returns more than one result from TruthFinder, save only the list of Student/Student's Relatives returned by TruthFinder and hold on before repeating the whole cycle so we can return to the identification of the Student/the whole process for the Student's Relatives once we do have the Student's Voter Record from Menaka's co-author's voter registration data gathering process if the Student does come up in the requested dataset
 * Party Affiliation is the only data point Menaka thinks we need to be able to study the student's political belief, but Menaka still wants us to scrape all of the detailed voter registration data e.g. Registration Date, House District/Senate District contained in the Student's Voter Record on voterrecords.com
-
+* 9/19/2021 notes Menaka to ask her co-author an her developer about voter records or BeenVerified address data of students in different states and I will then try to help her narrow down the voter registration/TruthFinder data and restrict the data scraping procedure to only the set of states on voterrecords.com accordingly
 
 ## Guide to Building the Student/Student Relative Voter Registration Dataset for Yourself
 
