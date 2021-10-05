@@ -22,7 +22,7 @@ unless (uc($favoriteSport) eq "FOOTBALL") {
 
     # *The first rule of football is...*
     # Ideally I can pull and condense the rules of football from the official rulebook PDF
-    # (RULE, SECTION and ARTICLE should not otherwise appear, so by RegEx on the heading?)
+    # (RULE \d+, SECTION \d+ and ARTICLE \d+\. should not otherwise appear, so by RegEx on the heading?)
     # Presented in the following format:
 
     # RULE 1 THE FIELD
@@ -35,6 +35,7 @@ unless (uc($favoriteSport) eq "FOOTBALL") {
     # ARTICLE 3. GOAL LINE.
     # ARTICLE 4. GROUND RULES.
     # ... Etc.
+    # + Item under Article when it exists
 
     # Scrape https://www.nfl.com/teams/ for my home team:
     # *My local football team is...*
