@@ -41,4 +41,7 @@ unless (uc($favoriteSport) eq "FOOTBALL") {
     # *My local football team is...*
     # Go to my local football team's home page, does my local team have its own rule page?
 
+    # https://uhcougars.com/sports/football
+    # I can even look up my local college football team if I want to be a Cougar fan
+
 }
