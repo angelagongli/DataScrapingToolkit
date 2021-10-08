@@ -7,18 +7,24 @@ chomp $favoriteSport;
 $favoriteSport =~ s/^\s+|\s+$//g;
 print "Thank you for telling me your favorite sport is " . lc($favoriteSport) . "!\n";
 
-# if (uc($favoriteSport) eq "FOOTBALL") {
-#     print("Now I know you must know a great deal about the gameplay of football, please explain all of the rules to me!\n");
-#     my $footballExplanation = <STDIN>;
-
-# }
-
 unless (uc($favoriteSport) eq "FOOTBALL") {
     # So clearly the person does not love football the most,
     # So I cannot assume the person would know too much about all of the rule,
     # So then I have to go find all of the rules of football all by myself,
     # So then I should go straight to the official source, the NFL:
     # https://operations.nfl.com/media/5427/2021-nfl-rulebook.pdf
+
+    use LWP::Simple 'getstore';
+    my $res = getstore('https://operations.nfl.com/media/5427/2021-nfl-rulebook.pdf', '2021NFLRulebook.pdf');
+    print $res, "\n";
+
+    my @args = ("pdftotext", "2021NFLRulebook.pdf");
+    system(@args) == 0
+        or die "system @args failed: $?";
+
+    my $file = '2021NFLRulebook.txt';
+    open(FH, $file)
+        or die("File $file not found");
 
     # *The first rule of football is...*
     # Ideally I can pull and condense the rules of football from the official rulebook PDF
@@ -37,11 +43,34 @@ unless (uc($favoriteSport) eq "FOOTBALL") {
     # ... Etc.
     # + Item under Article when it exists
 
+    while (my $String = <FH>) {
+        # *The first rule of football is...*
+        if ($String =~ /RULE 1\s+/) {
+            print "Expecting: RULE 1 THE FIELD\n";
+            print "$String \n";
+        } elsif ($String =~ /SECTION \d+/) {
+            print "Start of Section\n";
+            print "$String \n";
+        } elsif ($String =~ /ARTICLE \d+\./) {
+            print "Start of Article\n";
+            print "$String \n";
+        } elsif ($String =~ /RULE \d+/) {
+            last;
+        }
+    }
+    close(FH);
+
     # Scrape https://www.nfl.com/teams/ for my home team:
     # *My local football team is...*
     # Go to my local football team's home page, does my local team have its own rule page?
+    use LWP::Simple qw(get);
+    use HTML::TreeBuilder 5 -weak;
 
-    # https://uhcougars.com/sports/football
-    # I can even look up my local college football team if I want to be a Cougar fan
+    my $url = "https://www.nfl.com/teams/";
+    my $html = get $url;
+    my $tree = HTML::TreeBuilder->new;
+    $tree->parse($html);
+
+    # TODO: Look for "Houston Texan" and then go to the home page
 
 }
